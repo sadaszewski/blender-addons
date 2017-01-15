@@ -37,7 +37,10 @@ class PlaceObjectOnSurface(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     align_with_normal = bpy.props.FloatProperty(
-        name="Align with Normal", min=0, max=1, default=1)
+        name="Align with normal", min=0, max=1, default=1)
+        
+    use_smooth = bpy.props.BoolProperty(
+        name="Use smooth normal", default=True)
 
     def execute(self, context):
         selected = bpy.context.selected_objects
@@ -50,7 +53,8 @@ class PlaceObjectOnSurface(bpy.types.Operator):
         
         loc = surf.matrix_world.inverted() * loc
         (loc, normal, index, dist) = bvh.find_nearest(loc)
-        normal = smooth_normal(surf, loc, index)
+        if self.use_smooth:
+            normal = smooth_normal(surf, loc, index)
         loc = surf.matrix_world * loc
         
         bpy.ops.object.duplicate()
