@@ -14,15 +14,20 @@ bl_info = {
 import bpy
 from mathutils import Quaternion, Matrix, Vector, Euler
 from mathutils.bvhtree import BVHTree
+from mathutils.interpolate import poly_3d_calc
 
 
-# def qexp(q, t):
-#
-#
-#def slerp(q0, q1, t):
-#    q0_inv = q0.copy()
-#    q0_inv.inverse()
-#    (q0 * (q0_inv * q1)
+def smooth_normal(obj, loc, index):
+    obj_data = obj.to_mesh(bpy.context.scene, True, 'PREVIEW')
+    vert_indices = [obj_data.loops[i].vertex_index for i in obj_data.polygons[index].loop_indices]
+    vert_coords = [obj_data.vertices[i].co for i in vert_indices]
+    vert_normals = [obj_data.vertices[i].normal for i in vert_indices]
+    weights = poly_3d_calc(vert_coords, loc)
+    # self.report({'INFO'}, str(vert_normals))
+    sum = Vector((0.0, 0.0, 0.0))
+    for i in range(len(weights)):
+        sum += weights[i] * vert_normals[i]
+    return (sum / len(weights))
 
 
 class PlaceObjectOnSurface(bpy.types.Operator):
@@ -33,38 +38,23 @@ class PlaceObjectOnSurface(bpy.types.Operator):
     
     align_with_normal = bpy.props.FloatProperty(
         name="Align with Normal", min=0, max=1, default=1)
-    
-    #def invoke(self, context, event):
-    #   wm = context.window_manager
-    #   return wm.invoke_props_dialog(self)
 
     def execute(self, context):
-        # self.report({'INFO'}, str(self.align_with_normal))
         selected = bpy.context.selected_objects
         obj = selected[-1]
-        surf = bpy.context.scene.objects['surface'] # selected[-2]
-        # self.report({'INFO'}, str(surf))
+        surf = bpy.context.scene.objects['surface']
         
         loc = bpy.context.scene.cursor_location
-        # self.report({'INFO'}, str(loc))
-        # return {'FINISHED'}
         
         bvh = BVHTree.FromObject(surf, bpy.context.scene)
         
         loc = surf.matrix_world.inverted() * loc
         (loc, normal, index, dist) = bvh.find_nearest(loc)
+        normal = smooth_normal(surf, loc, index)
         loc = surf.matrix_world * loc
         
-        # surf.select = False
         bpy.ops.object.duplicate()
         new_obj = bpy.context.selected_objects[-1]
-        # new_obj.select = False
-        # surf.select = True
-        # obj.select = True
-            
-        new_obj.location = loc
-        
-        # self.report({'INFO'}, str(normal))
         
         (unused, surf_rot, unused) = surf.matrix_world.decompose()
         (unused, obj_rot, scale) = obj.matrix_world.decompose()
@@ -81,10 +71,6 @@ class PlaceObjectOnSurface(bpy.types.Operator):
             mat_scale)
         
         bpy.context.scene.objects.active = new_obj
-        # bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-        
-        
-        
         
         return {'FINISHED'}
 
