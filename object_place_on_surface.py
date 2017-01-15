@@ -58,9 +58,9 @@ class PlaceObjectOnSurface(bpy.types.Operator):
         # surf.select = False
         bpy.ops.object.duplicate()
         new_obj = bpy.context.selected_objects[-1]
-        new_obj.select = False
+        # new_obj.select = False
         # surf.select = True
-        obj.select = True
+        # obj.select = True
             
         new_obj.location = loc
         
