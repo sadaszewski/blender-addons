@@ -17,6 +17,7 @@ from mathutils.bvhtree import BVHTree
 from mathutils.interpolate import poly_3d_calc
 import numpy as np
 from collections import defaultdict
+import bmesh
 
     
 '''def get_group_neighbors(obj):
@@ -31,6 +32,59 @@ from collections import defaultdict
                     neighbors[g_1.group * n + g_2.group] = True
                     neighbors[g_2.group * n + g_1.group] = True
     return neighbors'''
+    
+    
+def ncv(obj):
+    ret = [None] * len(obj.data.vertices)
+    
+    '''connected = defaultdict(lambda: [])
+    
+    for e in obj.data.edges:
+        v_1 = e.vertices[0]
+        v_2 = e.vertices[1]
+        connected[v_1].append(v_2)
+        connected[v_2].append(v_1)
+        
+    for v_1 in range(len(obj.data.vertices)):
+        n_1 = obj.data.vertices[v_1].normal
+        sum = 0.0
+        for v_2 in connected[v_1]:
+            n_2 = obj.data.vertices[v_2].normal
+            sum += 1.0 - np.dot(n_1, n_2)
+        ret[v_1] = sum / len(connected[v_1])'''
+        
+    
+        
+    bpy.ops.object.mode_set(mode='EDIT')
+    
+    bm = bmesh.from_edit_mesh(obj.data)
+    cnt = 0
+    for v_1 in bm.verts:
+        n_1 = v_1.normal
+        sum = 0.0
+        for e in v_1.link_edges:
+            if e.verts[0] == v_1:
+                v_2 = e.verts[1]
+            else:
+                v_2 = e.verts[0]
+            n_2 = v_2.normal
+            sum += 1.0 - np.dot(n_1, n_2)
+        ret[cnt] = sum / len(v_1.link_edges)
+        cnt += 1
+    
+    thr = np.mean(ret)
+    
+    cnt = 0
+    for v in bm.verts:
+        if ret[cnt] >= thr:
+            v.select = True
+        cnt += 1
+        
+    bpy.context.scene.objects.active = bpy.context.scene.objects.active
+    
+    # bpy.ops.object.mode_set(mode='OBJECT')
+        
+    return ret
     
     
 def get_group_neighbors(obj):
