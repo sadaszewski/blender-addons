@@ -1,0 +1,41 @@
+
+#define PI 3.1415926535897932384
+
+shader LaserProjector(
+    float Min = -45,
+    float Max = 45,
+    float Step = 5,
+    float Width = 0.05,
+	point Pt = P,
+    output float Hit = 0.0
+)
+{   
+    for (float ax = Min; ax <= Max; ax += Step) {
+        for (float az = Min; az <= Max; az += Step) {
+
+        point Nrm = point(0.0, 1.0, 0.0);
+        float zsin = sin(az * PI / 180);
+            float zcos = cos(az * PI / 180);
+            float xsin = sin(ax * PI / 180);
+            float xcos = cos(ax * PI / 180);
+            matrix Mx = matrix(1, 0, 0, 0,
+                0, xcos, -xsin, 0,
+                0, xsin, xcos, 0,
+                0,    0,    0, 1);
+            matrix Mz = matrix(zcos, -zsin, 0, 0,
+                zsin, zcos, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1);
+            Nrm = transform(Mx * Mz, Nrm);
+                
+            point D = Pt-dot(Pt, Nrm)*Nrm;
+            float d = sqrt(dot(D, D));
+            if (d < Width) {
+
+                Hit = 1 - trace(Pt, -Nrm);
+                break;
+            }
+        }
+    }
+}
+
